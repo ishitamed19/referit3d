@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "/home/imedirat/miniconda3/envs/3dgf/bin/python",
+    "python.formatting.provider": "black"
+}
