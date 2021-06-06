@@ -9,11 +9,13 @@ from .utils import check_segmented_object_order, sample_scan_object, pad_samples
 from .utils import instance_labels_of_context, mean_rgb_unit_norm_transform
 from ...data_generation.nr3d import decode_stimulus_string
 
+import ipdb
+st = ipdb.set_trace
 
 class ListeningDataset(Dataset):
     def __init__(self, references, scans, vocab, max_seq_len, points_per_object, max_distractors,
                  class_to_idx=None, object_transformation=None,
-                 visualization=False):
+                 visualization=False, use_hardcoded_boxes=False):
 
         self.references = references
         self.scans = scans
@@ -25,6 +27,7 @@ class ListeningDataset(Dataset):
         self.class_to_idx = class_to_idx
         self.visualization = visualization
         self.object_transformation = object_transformation
+        self.use_hardcoded_boxes = use_hardcoded_boxes
 
         if not check_segmented_object_order(scans):
             raise ValueError
@@ -60,6 +63,7 @@ class ListeningDataset(Dataset):
         return distractors
 
     def __getitem__(self, index):
+        st()
         res = dict()
         scan, target, tokens, is_nr3d = self.get_reference_data(index)
 

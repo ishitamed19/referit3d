@@ -21,6 +21,9 @@ from referit3d.models.referit3d_net_utils import single_epoch_train, evaluate_on
 from referit3d.models.utils import load_state_dicts, save_state_dicts
 from referit3d.analysis.deepnet_predictions import analyze_predictions
 
+import ipdb
+st = ipdb.set_trace
+
 if __name__ == '__main__':
     def log_train_test_information():
         """Helper logging function.

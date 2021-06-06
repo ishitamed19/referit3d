@@ -5,12 +5,15 @@ import warnings
 from collections import defaultdict
 
 from plyfile import PlyData
+from six import b
 
 from ..utils.point_clouds import uniform_sample
 from ..utils import invert_dictionary, read_dict
 from ..utils.plotting import plot_pointcloud
 from .three_d_object import ThreeDObject
 
+import ipdb
+st = ipdb.set_trace
 
 class ScannetDataset(object):
     """
@@ -54,7 +57,7 @@ class ScannetScan(object):
     object that exist in the scene, their semantic labels and their RGB color.
     """
 
-    def __init__(self, scan_id, scannet_dataset, apply_global_alignment=True):
+    def __init__(self, scan_id, scannet_dataset, apply_global_alignment=True, hardcode_boxes_path=None):
         """
             :param scan_id: (string) e.g. 'scene0705_00'
             :scannet_dataset: (ScannetDataset) captures the details about the class-names, top-directories etc.
@@ -65,6 +68,10 @@ class ScannetScan(object):
             self.load_point_cloud_with_meta_data(self.scan_id, apply_global_alignment=apply_global_alignment)
 
         self.three_d_objects = None  # A list with ThreeDObject contained in this Scan
+        self.hardcoded_boxes = None
+        if hardcode_boxes_path is not None:
+            self.hardcoded_objects = None # A list with ThreeDObject contained in this Scan
+            self.hardcoded_boxes = self.load_hardcoded_boxes(hardcode_boxes_path)
 
     def __str__(self, verbose=True):
         res = '{}'.format(self.scan_id)
@@ -163,6 +170,30 @@ class ScannetScan(object):
             all_objects.append(ThreeDObject(self, object_id, object_pc, object_instance_label))
         self.three_d_objects = all_objects
         return check
+
+    def load_point_clouds_of_all_hardcoded_boxes(self):
+        # iterate over every object
+        count_bad_boxes = 0 
+        all_objects = []
+        for idx, box in enumerate(self.hardcoded_boxes):
+            xmin, ymin, zmin, xmax, ymax, zmax = box
+            object_pc = np.where((self.pc[:,0] >= xmin) & (self.pc[:,0] <= xmax) & (self.pc[:,1] >= ymin) & (self.pc[:,1] <= ymax) & (self.pc[:,2] >= zmin) & (self.pc[:,2] <= zmax))[0]
+            if len(object_pc) == 0:
+                count_bad_boxes += 1
+                continue
+            object_id = idx
+            object_label = "group_free_object"
+            all_objects.append(ThreeDObject(self, object_id, object_pc, object_label))
+        self.hardcoded_objects = all_objects
+        return count_bad_boxes
+
+    def load_hardcoded_boxes(self, path_to_boxes):
+        boxes = np.load(path_to_boxes) # N, 7
+        centroid = boxes[:, :3]
+        lengths = boxes[:, 3:6]
+        min_coords = centroid - (lengths/2)
+        max_coords = centroid + (lengths/2)
+        return np.concatenate((min_coords,max_coords),axis=1)
 
     def override_instance_labels_by_semantic_labels(self):
         for o in self.three_d_objects:

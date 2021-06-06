@@ -8,6 +8,8 @@ from .vocabulary import build_vocab, Vocabulary
 from ..utils import read_lines, unpickle_data
 from ..data_generation.nr3d import decode_stimulus_string
 
+import ipdb
+st = ipdb.set_trace
 
 def scannet_official_train_val(valid_views=None, verbose=True):
     """

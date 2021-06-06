@@ -24,6 +24,10 @@ def parse_args():
     parser.add_argument('--verbose', default=True, type=str2bool, help='')
     parser.add_argument('--apply-global-alignment', default=True, type=str2bool,
                         help='rotate/translate entire scan globally to aligned it with other scans')
+    parser.add_argument('--specific-scans', action='store_true',
+                        help='only use scannetv2_<split>.txt file to process specific scans')
+    parser.add_argument('--hardcode-boxes', default=None, type=str,
+                        help='path where all hardcoded boxes are stored at')
 
     ret = parser.parse_args()
 
@@ -48,7 +52,17 @@ if __name__ == '__main__':
         tag += '_no_global_scan_alignment'
 
     # Read all scan files.
-    all_scan_ids = [osp.basename(i) for i in immediate_subdirectories(args.top_scan_dir)]
+    if args.specific_scans:
+        all_scan_ids = []
+        with open('../data/scannet/splits/official/v2/scannetv2_train.txt' , "rb") as f:
+            bytelist = f.read().splitlines() 
+            all_scan_ids += [x.decode('utf-8') for x in bytelist]
+        with open('../data/scannet/splits/official/v2/scannetv2_val.txt' , "rb") as f:
+            bytelist = f.read().splitlines() 
+            all_scan_ids += [x.decode('utf-8') for x in bytelist]
+
+    else:
+        all_scan_ids = [osp.basename(i) for i in immediate_subdirectories(args.top_scan_dir)]
     print('{} scans found.'.format(len(all_scan_ids)))
 
     kept_scan_ids = []
@@ -75,8 +89,10 @@ if __name__ == '__main__':
         :return: the loaded scan.
         """
         global scannet, args
-        scan_i = ScannetScan(scan_id, scannet, args.apply_global_alignment)
+        scan_i = ScannetScan(scan_id, scannet, args.apply_global_alignment, osp.join(args.hardcode_boxes, scan_id + '_pred_boxes.npy'))
         scan_i.load_point_clouds_of_all_objects()
+        bad_box = scan_i.load_point_clouds_of_all_hardcoded_boxes()
+        print(scan_id, bad_box)
         return scan_i
 
     if args.verbose:
